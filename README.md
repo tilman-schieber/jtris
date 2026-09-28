@@ -26,5 +26,3 @@ npm install
 npm run dev
 npm run build
 ```
-
-Optional: put your own `public/music.mp3` in place to replace the built-in chiptune (it is git-ignored).

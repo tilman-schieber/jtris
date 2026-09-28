@@ -12,7 +12,6 @@ export function unlockAudio() {
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    void loadTrack();
   }
   if (ctx.state === 'suspended') void ctx.resume();
 }
@@ -112,48 +111,11 @@ function schedule() {
   }
 }
 
-// Optional music file: drop public/music.mp3 in and it replaces the chiptune.
-let track: AudioBuffer | null = null;
-let trackSrc: AudioBufferSourceNode | null = null;
-let trackGain: GainNode;
-let trackOffset = 0;
-let trackStartedAt = 0;
-
-async function loadTrack() {
-  try {
-    const res = await fetch(`${import.meta.env.BASE_URL}music.mp3`);
-    if (!res.ok || !res.headers.get('content-type')?.startsWith('audio')) return;
-    track = await ctx!.decodeAudioData(await res.arrayBuffer());
-    trackGain = ctx!.createGain();
-    trackGain.gain.value = 1.6; // master is quiet, tuned for the synth
-    trackGain.connect(master);
-    // Switch over if the synth already started.
-    if (timer !== undefined) {
-      music.halt();
-      music.play();
-    }
-  } catch {
-    track = null;
-  }
-}
-
 export const music = {
   play(restart = false) {
-    if (restart) {
-      tick = 0;
-      trackOffset = 0;
-    }
+    if (restart) tick = 0;
     playing = true;
-    if (!ctx || !musicOn || timer !== undefined || trackSrc) return;
-    if (track) {
-      trackSrc = ctx.createBufferSource();
-      trackSrc.buffer = track;
-      trackSrc.loop = true;
-      trackSrc.connect(trackGain);
-      trackSrc.start(0, trackOffset % track.duration);
-      trackStartedAt = ctx.currentTime - trackOffset;
-      return;
-    }
+    if (!ctx || !musicOn || timer !== undefined) return;
     nextTime = ctx.currentTime + 0.05;
     timer = window.setInterval(schedule, 25);
   },
@@ -164,11 +126,6 @@ export const music = {
   halt() {
     if (timer !== undefined) clearInterval(timer);
     timer = undefined;
-    if (trackSrc && ctx) {
-      trackOffset = ctx.currentTime - trackStartedAt;
-      trackSrc.stop();
-      trackSrc = null;
-    }
   },
   toggle() {
     musicOn = !musicOn;
