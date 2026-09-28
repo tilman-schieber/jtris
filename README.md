@@ -2,7 +2,7 @@
 
 A NES-style falling-block puzzle game with pixel art, built in TypeScript with no dependencies at runtime. Runs entirely in the browser.
 
-**Play:** https://tilman-schieber.github.io/jtris/
+**Play:** https://gh.tschieber.de/jtris/
 
 ## Controls
 
