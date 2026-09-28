@@ -1,7 +1,7 @@
 import { Game, GAction, Input } from './game';
 import { PAction } from './player';
 import { render, W, H, setHeldForDisplay } from './render';
-import { unlockAudio } from './audio';
+import { unlockAudio, music } from './audio';
 import { setupTouch, TouchButton } from './touch';
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
@@ -11,7 +11,7 @@ ctx.imageSmoothingEnabled = false;
 const touchPanel = setupTouch(onTouch);
 
 function resize() {
-  const reserved = touchPanel ? touchPanel.offsetHeight + 8 : 0;
+  const reserved = touchPanel ? touchPanel.el.offsetHeight + 8 : 0;
   const scale = Math.min(innerWidth / W, (innerHeight - reserved) / H);
   // Whole-number scaling keeps pixels crisp; phones may need a fractional fit.
   const s = scale >= 2 ? Math.floor(scale) : Math.max(0.5, scale);
@@ -98,6 +98,8 @@ addEventListener('keydown', (e) => {
   if (p2) input.players[1].pressed.add(p2);
 });
 addEventListener('keyup', (e) => heldKeys.delete(e.code));
+// Any tap unlocks sound; mobile browsers only allow it after a gesture.
+for (const ev of ['pointerdown', 'pointerup', 'touchend']) addEventListener(ev, unlockAudio, { passive: true });
 addEventListener('blur', () => {
   heldKeys.clear();
   const active = game.phase === 'play' || game.phase === 'ready';
@@ -151,6 +153,11 @@ function loop(now: number) {
     frame++;
   }
   render(ctx, game, frame);
+  touchPanel?.update({
+    playing: game.players.length > 0 && game.phase !== 'title',
+    modern: game.players[0]?.cfg.modern ?? game.modern,
+    musicOn: music.enabled,
+  });
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

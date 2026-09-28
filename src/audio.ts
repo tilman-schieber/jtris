@@ -4,6 +4,9 @@ let master: GainNode;
 let noiseBuf: AudioBuffer;
 
 export function unlockAudio() {
+  // iOS: play through the silent switch like a media app (Safari 16.4+).
+  const session = (navigator as { audioSession?: { type: string } }).audioSession;
+  if (session && session.type !== 'playback') session.type = 'playback';
   if (!ctx) {
     ctx = new AudioContext();
     master = ctx.createGain();
