@@ -372,7 +372,7 @@ const LOGO: string[][] = [
 ];
 const LOGO_TYPES = [0, 2, 6, 1, 4];
 const LOGO_X = (W - (LOGO.length * 4 - 1) * 8) / 2;
-const MUSIC_LABELS = ['A KOROBEINIKI', 'B MINUET', 'C MTN KING', 'OFF'];
+const MUSIC_LABELS = ['A KOROBEINIKI', 'B MINUET', 'C MTN KING', 'ALL A-B-C', 'OFF'];
 
 function renderTitle(ctx: Ctx, game: Game, frame: number) {
   const s = game.settings;

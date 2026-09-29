@@ -1,7 +1,7 @@
 import { Player, PInput, ClearEvent } from './player';
 import { MODES, Mode, B_HEIGHTS, ROLL_FRAMES } from './modes';
 import { loadTables, saveTables, rankFor, ScoreEntry, Tables, MAX_SCORES, load, save } from './scores';
-import { sfx, music, ACCELERATES, TRACK_NAMES } from './audio';
+import { sfx, music, ACCELERATES, TRACK_NAMES, MUSIC_ALL, MUSIC_OFF } from './audio';
 import { hashString, randomSeed, today } from './rng';
 import { blockColor, MODERN_COLORS } from './draw';
 import { HELP_PAGES } from './help';
@@ -39,6 +39,8 @@ export interface Settings {
   colors: ColorMode;
   music: number;
   daily: boolean;
+  /** Settings format version. */
+  v?: number;
 }
 
 export const MENU = ['MODE', 'LEVEL', 'HEIGHT', 'RULES', 'COLORS', 'MUSIC', 'SEED', 'HELP'] as const;
@@ -74,6 +76,9 @@ function loadSettings(): Settings {
     s.mode = Math.min(MODES.length - 1, Math.max(0, s.mode | 0));
     s.level = Math.min(29, Math.max(0, s.level | 0));
     s.height = Math.min(B_HEIGHTS.length - 1, Math.max(0, s.height | 0));
+    // Settings before v2 stored OFF as 3, which is now ALL.
+    if (!s.v && s.music === MUSIC_ALL) s.music = MUSIC_OFF;
+    s.v = 2;
     s.music = Math.min(TRACK_NAMES.length - 1, Math.max(0, s.music | 0));
     return s;
   } catch {
@@ -205,7 +210,7 @@ export class Game {
   private stepTitle(pressed: Set<string>) {
     const s = this.settings;
     // Preview the selected tune on the title screen.
-    if (!music.running && s.music < 3) music.play(s.music);
+    if (!music.running && s.music !== MUSIC_OFF) music.play(s.music);
 
     if (pressed.has('up')) this.menuRow = (this.menuRow + MENU.length - 1) % MENU.length;
     if (pressed.has('down')) this.menuRow = (this.menuRow + 1) % MENU.length;
@@ -326,7 +331,8 @@ export class Game {
     });
 
     const p = this.players[0];
-    if (ACCELERATES[this.settings.music]) music.setSpeed(1 + Math.min(0.9, p.level * 0.05));
+    // Follows the tune actually playing, which changes under ALL.
+    music.setSpeed(ACCELERATES[music.track] ? 1 + Math.min(0.9, p.level * 0.05) : 1);
 
     if (this.versus) return this.checkVersus();
 

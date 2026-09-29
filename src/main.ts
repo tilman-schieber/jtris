@@ -162,4 +162,4 @@ function loop(now: number) {
 }
 requestAnimationFrame(loop);
 
-if (import.meta.env.DEV) Object.assign(window, { game });
+if (import.meta.env.DEV) Object.assign(window, { game, music });

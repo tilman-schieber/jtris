@@ -155,7 +155,12 @@ const MOUNTAIN_KING: Track = {
 };
 
 const TRACKS = [KOROBEINIKI, MINUET, MOUNTAIN_KING];
-export const TRACK_NAMES = ['A', 'B', 'C', 'OFF'];
+export const TRACK_NAMES = ['A', 'B', 'C', 'ALL', 'OFF'];
+/** Music selections beyond the single tracks. */
+export const MUSIC_ALL = 3;
+export const MUSIC_OFF = 4;
+/** Times each tune repeats before ALL moves on. */
+const ALL_REPEATS = 2;
 /** Tracks that speed up with the level. */
 export const ACCELERATES = [false, false, true];
 
@@ -172,6 +177,8 @@ const compiled = TRACKS.map((tr) => {
 let musicOn = true;
 let playing = false;
 let current = -1;
+/** Playing every tune in turn (ALL). */
+let playlist = false;
 let tick = 0;
 let nextTime = 0;
 let speed = 1;
@@ -179,9 +186,13 @@ let timer: number | undefined;
 
 function schedule() {
   if (!ctx || current < 0) return;
-  const { tr, notes, loop } = compiled[current];
-  const step = tr.tick / speed;
   while (nextTime < ctx.currentTime + 0.12) {
+    if (playlist && tick >= compiled[current].loop * ALL_REPEATS) {
+      current = (current + 1) % TRACKS.length;
+      tick = 0;
+    }
+    const { tr, notes, loop } = compiled[current];
+    const step = tr.tick / speed;
     const i = tick % loop;
     const n = notes.get(i);
     if (n) tone(midiHz(n[0]), n[1] * step * 0.9, 'square', 0.1, nextTime);
@@ -193,12 +204,14 @@ function schedule() {
 }
 
 export const music = {
-  /** Play a track (0-2); 3 or higher means off. */
-  play(track: number, restart = false) {
-    if (track >= TRACKS.length) return this.stop();
-    if (track !== current || restart) {
+  /** Play a track (0-2), all of them in turn (MUSIC_ALL), or stop (MUSIC_OFF). */
+  play(selection: number, restart = false) {
+    if (selection >= MUSIC_OFF) return this.stop();
+    const all = selection === MUSIC_ALL;
+    if (all !== playlist || (!all && selection !== current) || restart) {
       this.halt();
-      current = track;
+      playlist = all;
+      current = all ? 0 : selection;
       tick = 0;
     }
     playing = true;
@@ -207,7 +220,7 @@ export const music = {
     timer = window.setInterval(schedule, 25);
   },
   resume() {
-    if (current >= 0) this.play(current);
+    if (current >= 0) this.play(playlist ? MUSIC_ALL : current);
   },
   stop() {
     playing = false;

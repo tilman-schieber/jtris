@@ -20,7 +20,7 @@ A NES-style falling-block puzzle game with pixel art, built in TypeScript with n
 
 **Seed:** *Daily* gives everyone the same piece order for the day.
 
-**Music:** A – Korobeiniki, B – Minuet in G (Petzold), C – In the Hall of the Mountain King (Grieg, speeds up with the level). All public-domain melodies in original chiptune arrangements.
+**Music:** A – Korobeiniki, B – Minuet in G (Petzold), C – In the Hall of the Mountain King (Grieg, speeds up with the level). *ALL* plays the three in turn. All public-domain melodies in original chiptune arrangements.
 
 ## Controls
 
