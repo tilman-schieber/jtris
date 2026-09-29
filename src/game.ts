@@ -4,6 +4,7 @@ import { loadTables, saveTables, rankFor, ScoreEntry, Tables, MAX_SCORES, load, 
 import { sfx, music, ACCELERATES, TRACK_NAMES } from './audio';
 import { hashString, randomSeed, today } from './rng';
 import { blockColor, MODERN_COLORS } from './draw';
+import { HELP_PAGES } from './help';
 
 export type GAction = 'up' | 'down' | 'left' | 'right' | 'start' | 'back' | 'quit' | 'mute' | 'colors' | 'scores';
 
@@ -25,7 +26,8 @@ export type Phase =
   | 'result'
   | 'entry'
   | 'scores'
-  | 'vsresult';
+  | 'vsresult'
+  | 'help';
 
 export type ColorMode = 'classic' | 'modern';
 
@@ -39,7 +41,7 @@ export interface Settings {
   daily: boolean;
 }
 
-export const MENU = ['MODE', 'LEVEL', 'HEIGHT', 'RULES', 'COLORS', 'MUSIC', 'SEED'] as const;
+export const MENU = ['MODE', 'LEVEL', 'HEIGHT', 'RULES', 'COLORS', 'MUSIC', 'SEED', 'HELP'] as const;
 export const NAME_LEN = 6;
 const NAME_CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
@@ -106,6 +108,7 @@ export class Game {
   endingTier = 0;
 
   shake = 0;
+  helpPage = 0;
   particles: Particle[] = [];
 
   get mode(): Mode {
@@ -173,6 +176,8 @@ export class Game {
         if (++this.timer > 30 && pressed.has('start')) this.startGame();
         else if (pressed.has('back') || pressed.has('quit')) this.toTitle();
         return;
+      case 'help':
+        return this.stepHelp(pressed);
     }
   }
 
@@ -208,6 +213,13 @@ export class Game {
 
     const d = (pressed.has('right') ? 1 : 0) - (pressed.has('left') ? 1 : 0);
     const row = MENU[this.menuRow];
+    // The HELP row opens the guide on the selected mode's page.
+    if (row === 'HELP' && (d || pressed.has('start'))) {
+      this.helpPage = s.mode;
+      this.phase = 'help';
+      sfx.select();
+      return;
+    }
     if (d && this.rowEnabled(row)) {
       const wrap = (v: number, n: number) => (v + d + n) % n;
       if (row === 'MODE') s.mode = wrap(s.mode, MODES.length);
@@ -232,6 +244,18 @@ export class Game {
     } else if (pressed.has('start')) {
       this.wins = [0, 0];
       this.startGame();
+    }
+  }
+
+  private stepHelp(pressed: Set<string>) {
+    const d = (pressed.has('right') ? 1 : 0) - (pressed.has('left') ? 1 : 0);
+    if (d) {
+      this.helpPage = (this.helpPage + d + HELP_PAGES.length) % HELP_PAGES.length;
+      sfx.move();
+    }
+    if (pressed.has('start') || pressed.has('back') || pressed.has('quit')) {
+      this.phase = 'title';
+      sfx.select();
     }
   }
 

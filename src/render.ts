@@ -2,6 +2,7 @@ import { Game, MENU, NAME_LEN, formatClock, rocketTop } from './game';
 import { Player, COLS, ROWS } from './player';
 import { MODES, B_HEIGHTS } from './modes';
 import { MAX_SCORES } from './scores';
+import { HELP_PAGES, wrapText } from './help';
 import { drawText, drawTextCentered, textWidth } from './font';
 import {
   Ctx, W, H, WHITE, RED, GREY, LIGHT, DARK, YELLOW, MODERN_COLORS,
@@ -65,6 +66,9 @@ export function render(ctx: Ctx, game: Game, frame: number) {
       break;
     case 'ending':
       renderEnding(ctx, game, frame);
+      break;
+    case 'help':
+      renderHelp(ctx, game, frame);
       break;
     default:
       if (game.versus) renderVersus(ctx, game, frame);
@@ -392,9 +396,10 @@ function renderTitle(ctx: Ctx, game: Game, frame: number) {
     COLORS: s.colors === 'modern' ? 'MODERN' : 'CLASSIC',
     MUSIC: MUSIC_LABELS[s.music],
     SEED: mode.id === 'hate' ? '--' : s.daily ? 'DAILY' : 'RANDOM',
+    HELP: 'HOW TO PLAY',
   };
   MENU.forEach((row, i) => {
-    const y = 76 + i * 14;
+    const y = 74 + i * 12;
     const on = i === game.menuRow;
     const enabled = game.rowEnabled(row);
     if (on) drawText(ctx, '>', 34, y, YELLOW);
@@ -534,4 +539,20 @@ function renderEnding(ctx: Ctx, game: Game, frame: number) {
     drawTextCentered(ctx, game.result.title, 128, 26, WHITE);
   }
   if (t > 60 && (frame >> 5) % 2 === 0) drawTextCentered(ctx, 'PRESS ENTER', 128, 206, LIGHT);
+}
+
+// ---------- help ----------
+
+function renderHelp(ctx: Ctx, game: Game, frame: number) {
+  const page = HELP_PAGES[game.helpPage];
+  ctx.drawImage(background(game.settings.level), 0, 0);
+  drawBox(ctx, 16, 8, 224, 182);
+  drawTextCentered(ctx, `< ${page.title} >`, 128, 16, YELLOW);
+  ctx.fillStyle = '#585858';
+  ctx.fillRect(26, 27, 204, 1);
+  wrapText(page.text, 34).forEach((line, i) => drawText(ctx, line, 26, 34 + i * 10));
+
+  drawBox(ctx, 16, 194, 224, 24);
+  const blink = (frame >> 4) % 2 === 0;
+  drawTextCentered(ctx, `< > PAGE ${game.helpPage + 1}/${HELP_PAGES.length}    ENTER BACK`, 128, 202, blink ? WHITE : LIGHT);
 }
