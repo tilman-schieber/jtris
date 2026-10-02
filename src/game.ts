@@ -1,6 +1,6 @@
 import { Player, PInput, ClearEvent } from './player';
 import { MODES, Mode, B_HEIGHTS, ROLL_FRAMES } from './modes';
-import { loadTables, saveTables, rankFor, ScoreEntry, Tables, MAX_SCORES, load, save } from './scores';
+import { loadTables, saveTables, rankFor, ScoreEntry, Tables, MAX_SCORES, load, save, fetchGlobal, submitGlobal, flushPending } from './scores';
 import { sfx, music, ACCELERATES, TRACK_NAMES, MUSIC_ALL, MUSIC_OFF } from './audio';
 import { hashString, randomSeed, today } from './rng';
 import { blockColor, MODERN_COLORS } from './draw';
@@ -101,6 +101,13 @@ export class Game {
   goFlash = 0;
 
   tables: Tables = loadTables();
+  /** World top 10s from the server; null until loaded or while offline. */
+  global: Tables | null = null;
+  globalState: 'loading' | 'ok' | 'offline' = 'loading';
+  /** Show the world table (true) or this browser's own (false). */
+  scoresGlobal = true;
+  /** Row of the last game in the world table, or -1. */
+  globalRank = -1;
   scoresView = 0;
   entryRank = -1;
   entryName: string[] = [];
@@ -130,6 +137,29 @@ export class Game {
 
   get colors(): ColorMode {
     return this.settings.colors;
+  }
+
+  constructor() {
+    this.refreshGlobal();
+  }
+
+  private async refreshGlobal() {
+    // Games queued while offline go first, so the table includes them.
+    await flushPending();
+    const tables = await fetchGlobal();
+    if (tables) this.global = tables;
+    this.globalState = this.global ? 'ok' : 'offline';
+  }
+
+  /** Posts a finished game to the world table and marks where it landed. */
+  private async submitGlobal(e: ScoreEntry) {
+    const mode = this.mode.id;
+    const res = await submitGlobal(mode, e);
+    if (!res) return;
+    this.global ??= Object.fromEntries(MODES.map((m) => [m.id, []])) as unknown as Tables;
+    this.global[mode] = res.top;
+    this.globalState = 'ok';
+    if (this.settings.mode === MODES.findIndex((m) => m.id === mode)) this.globalRank = res.rank;
   }
 
   /** Best entry for the selected mode. */
@@ -242,8 +272,10 @@ export class Game {
     }
 
     if (pressed.has('scores')) {
+      this.refreshGlobal();
       this.scoresView = this.mode.id === 'versus' ? 0 : s.mode;
       this.entryRank = -1;
+      this.globalRank = -1;
       this.phase = 'scores';
       sfx.select();
     } else if (pressed.has('start')) {
@@ -518,6 +550,8 @@ export class Game {
 
   private prepareEntry() {
     this.entryRank = -1;
+    this.globalRank = -1;
+    this.scoresGlobal = true;
     const mode = this.mode;
     const p = this.players[0];
     if (mode.rank === 'none') return;
@@ -534,11 +568,15 @@ export class Game {
     const list = this.tables[mode.id];
     const at = rankFor(list, mode.rank, entry);
     this.scoresView = this.settings.mode;
-    if (at < 0) return;
+    const last = (load('jtris.name') ?? '').slice(0, NAME_LEN);
+    if (at < 0) {
+      // Not a personal record, but it still goes to the world table under the last name used.
+      if (last.trim()) this.submitGlobal({ ...entry, name: last.trim() });
+      return;
+    }
     list.splice(at, 0, entry);
     list.length = Math.min(list.length, MAX_SCORES);
     this.entryRank = at;
-    const last = (load('jtris.name') ?? '').slice(0, NAME_LEN);
     this.entryName = last.padEnd(NAME_LEN, ' ').split('');
     this.entryCursor = Math.min(NAME_LEN - 1, last.length);
     this.entryFresh = last.length > 0;
@@ -578,15 +616,18 @@ export class Game {
 
   private commitName() {
     const name = this.entryName.join('').trim() || '------';
-    this.tables[this.mode.id][this.entryRank].name = name;
+    const entry = this.tables[this.mode.id][this.entryRank];
+    entry.name = name;
     saveTables(this.tables);
     save('jtris.name', name);
+    this.submitGlobal(entry);
     this.phase = 'scores';
     this.timer = 0;
     sfx.level();
   }
 
   private showScores() {
+    this.refreshGlobal();
     this.scoresView = this.mode.id === 'versus' ? 0 : this.settings.mode;
     this.phase = 'scores';
     this.timer = 0;
@@ -600,7 +641,12 @@ export class Game {
       const at = ranked.indexOf(this.scoresView);
       this.scoresView = ranked[(at + d + ranked.length) % ranked.length];
       this.entryRank = -1;
+      this.globalRank = -1;
       sfx.select();
+    }
+    if (pressed.has('up') || pressed.has('down')) {
+      this.scoresGlobal = !this.scoresGlobal;
+      sfx.move();
     }
     if (pressed.has('start') || pressed.has('back') || pressed.has('scores')) this.toTitle();
   }

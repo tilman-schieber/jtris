@@ -432,7 +432,10 @@ function renderScores(ctx: Ctx, game: Game, frame: number) {
   ctx.drawImage(background(game.players[0]?.level ?? game.settings.level), 0, 0);
 
   drawBox(ctx, 24, 12, 208, 176);
-  drawTextCentered(ctx, entering ? 'NEW RECORD!' : 'HIGH SCORES', 128, 20, entering ? YELLOW : WHITE);
+  // The name is typed into your own table; afterwards the world table shows by default.
+  const world = game.scoresGlobal && !entering;
+  const title = entering ? 'NEW RECORD!' : world ? 'WORLD SCORES' : 'LOCAL SCORES';
+  drawTextCentered(ctx, title, 128, 20, entering ? YELLOW : WHITE);
   drawTextCentered(ctx, entering ? mode.name : `< ${mode.name} >`, 128, 32, LIGHT);
 
   const time = mode.rank === 'time';
@@ -446,12 +449,16 @@ function renderScores(ctx: Ctx, game: Game, frame: number) {
   ctx.fillStyle = '#585858';
   ctx.fillRect(34, 53, 188, 1);
 
-  const list = game.tables[mode.id];
   const blink = (frame >> 4) % 2 === 0;
-  for (let i = 0; i < MAX_SCORES; i++) {
+  if (world && !game.global) {
+    drawTextCentered(ctx, game.globalState === 'loading' ? 'LOADING...' : 'OFFLINE', 128, 110, game.globalState === 'loading' ? LIGHT : RED);
+  }
+  const list = world ? (game.global?.[mode.id] ?? []) : game.tables[mode.id];
+  const myRow = world ? game.globalRank : game.entryRank;
+  for (let i = 0; i < MAX_SCORES && (!world || game.global); i++) {
     const y = 58 + i * 12;
     const e = list[i];
-    const mine = i === game.entryRank && game.scoresView === game.settings.mode;
+    const mine = i === myRow && game.scoresView === game.settings.mode;
     const color = mine ? (entering || blink ? YELLOW : WHITE) : i < 3 ? WHITE : LIGHT;
     rightText(ctx, String(i + 1), 45, y, mine ? color : GREY);
     if (!e) {
@@ -481,7 +488,7 @@ function renderScores(ctx: Ctx, game: Game, frame: number) {
 
   drawBox(ctx, 24, 194, 208, 24);
   if (entering) drawTextCentered(ctx, 'TYPE NAME  THEN ENTER', 128, 202);
-  else drawTextCentered(ctx, '< > MODE    ENTER BACK', 128, 202, blink ? WHITE : LIGHT);
+  else drawTextCentered(ctx, `< > MODE   UP ${world ? 'LOCAL' : 'WORLD'}   ENTER`, 128, 202, blink ? WHITE : LIGHT);
 }
 
 // ---------- ending: rocket launch ----------

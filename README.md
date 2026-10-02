@@ -42,7 +42,7 @@ A NES-style falling-block puzzle game with pixel art, built in TypeScript with n
 
 Touch controls appear automatically on phones and tablets.
 
-High scores (top 10 per mode) and settings are stored in your browser's local storage.
+High scores: the top 10 per mode, both worldwide and in your own browser (Up/Down switches between them on the score screen). World scores live in a small [Val Town](https://www.val.town/x/tilmanschieber/jtris-scores) val with a SQLite table; your own scores and settings stay in the browser's local storage, so they still work offline. Games finished while the server can't be reached wait in local storage and are sent the next time the score screen opens.
 
 ## Development
 
