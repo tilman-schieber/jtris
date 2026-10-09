@@ -110,6 +110,7 @@ export const HELP_PAGES: HelpPage[] = [
       'BACKSPACE: QUIT WHEN PAUSED',
       'M MUSIC   C COLORS   H SCORES',
       '',
+      'GAMEPAD: PAD MOVES, UP DROPS, A AND B ROTATE, X HOLDS. VERSUS: ONE PAD EACH.',
       'ON PHONES USE THE BUTTONS BELOW THE SCREEN.',
     ],
   },

@@ -118,6 +118,66 @@ function onTouch(b: TouchButton, down: boolean) {
   if (b.typed) input.typed.push(b.typed);
 }
 
+// Gamepads, in the standard mapping. In the menus: d-pad or left stick, A confirms, B goes back,
+// Start, Select quits from pause, Y opens the scores on the title screen. In play: left, right
+// and down move, Up drops, A turns clockwise, B or Y the other way, X or a shoulder button holds,
+// Start pauses. In versus the first pad plays left, the second right. Typing a name: Up/Down pick
+// a letter, A or Start enters it, B rubs one out.
+const STICK = 0.4;
+let padGHeld = new Set<GAction>();
+const padPHeld: [Set<PAction>, Set<PAction>] = [new Set(), new Set()];
+
+function pollPads() {
+  const active = game.phase === 'play' || game.phase === 'ready';
+  const g = new Set<GAction>();
+  const ps: [Set<PAction>, Set<PAction>] = [new Set(), new Set()];
+  let slot = 0;
+  for (const pad of navigator.getGamepads?.() ?? []) {
+    if (!pad) continue;
+    const on = (i: number) => !!pad.buttons[i]?.pressed;
+    const [x = 0, y = 0] = pad.axes;
+    const up = on(12) || y < -STICK, down = on(13) || y > STICK, left = on(14) || x < -STICK, right = on(15) || x > STICK;
+    if (on(9)) g.add('start');
+    if (on(8)) g.add('quit');
+    if (active) {
+      const p = ps[game.versus ? slot : 0];
+      if (slot < 2 || !game.versus) {
+        if (left) p.add('left');
+        if (right) p.add('right');
+        if (down) p.add('down');
+        if (up) p.add('hard');
+        if (on(0)) p.add('cw');
+        if (on(1) || on(3)) p.add('ccw');
+        if (on(2) || on(4) || on(5)) p.add('hold');
+      }
+    } else {
+      if (up) g.add('up');
+      if (down) g.add('down');
+      if (left) g.add('left');
+      if (right) g.add('right');
+      if (on(0)) g.add('start');
+      if (on(1)) g.add('back');
+      if (on(3) && game.phase === 'title') g.add('scores');
+    }
+    slot++;
+  }
+  for (const a of g) {
+    input.held.add(a);
+    if (padGHeld.has(a)) continue;
+    unlockAudio();
+    if (game.phase === 'entry' && (a === 'start' || a === 'back')) input.typed.push(a === 'start' ? 'Enter' : 'Backspace');
+    else input.pressed.add(a);
+  }
+  padGHeld = g;
+  ps.forEach((set, i) => {
+    for (const a of set) {
+      input.players[i].held.add(a);
+      if (!padPHeld[i].has(a)) input.players[i].pressed.add(a);
+    }
+    padPHeld[i] = set;
+  });
+}
+
 function refreshHeld() {
   input.held.clear();
   for (const p of input.players) p.held.clear();
@@ -131,6 +191,7 @@ function refreshHeld() {
     if (b.g) input.held.add(b.g);
     if (b.p) input.players[0].held.add(b.p);
   }
+  pollPads();
 }
 setHeldForDisplay(input.players[0].held);
 
