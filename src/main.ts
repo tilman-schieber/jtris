@@ -3,12 +3,14 @@ import { PAction } from './player';
 import { render, W, H, setHeldForDisplay } from './render';
 import { unlockAudio, music } from './audio';
 import { setupTouch, TouchButton } from './touch';
+import { setupHidPad, padAxes } from './hidpad';
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 ctx.imageSmoothingEnabled = false;
 
 const touchPanel = setupTouch(onTouch);
+setupHidPad();
 
 function resize() {
   const reserved = touchPanel ? touchPanel.el.offsetHeight + 8 : 0;
@@ -135,7 +137,7 @@ function pollPads() {
   for (const pad of navigator.getGamepads?.() ?? []) {
     if (!pad) continue;
     const on = (i: number) => !!pad.buttons[i]?.pressed;
-    const [x = 0, y = 0] = pad.axes;
+    const [x = 0, y = 0] = padAxes(pad);
     const up = on(12) || y < -STICK, down = on(13) || y > STICK, left = on(14) || x < -STICK, right = on(15) || x > STICK;
     if (on(9)) g.add('start');
     if (on(8)) g.add('quit');
