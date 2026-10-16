@@ -3,7 +3,7 @@ import { PAction } from './player';
 import { render, W, H, setHeldForDisplay } from './render';
 import { unlockAudio, music } from './audio';
 import { setupTouch, TouchButton } from './touch';
-import { setupHidPad, padAxes } from './hidpad';
+import { setupHidPad, padAxes } from 'arcade-kit/hidpad';
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
@@ -115,7 +115,7 @@ function onTouch(b: TouchButton, down: boolean) {
     return;
   }
   touchHeld.add(b);
-  if (b.g) input.pressed.add(b.g);
+  if (b.a) input.pressed.add(b.a);
   if (b.p) input.players[0].pressed.add(b.p);
   if (b.typed) input.typed.push(b.typed);
 }
@@ -190,7 +190,7 @@ function refreshHeld() {
     if (p2) input.players[1].held.add(p2);
   }
   for (const b of touchHeld) {
-    if (b.g) input.held.add(b.g);
+    if (b.a) input.held.add(b.a);
     if (b.p) input.players[0].held.add(b.p);
   }
   pollPads();

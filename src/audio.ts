@@ -1,63 +1,8 @@
-// Tiny Web Audio chiptune synth: SFX + three public-domain tunes in original arrangements.
-let ctx: AudioContext | null = null;
-let master: GainNode;
-let noiseBuf: AudioBuffer;
+// JTRIS' sounds and music on arcade-kit's chiptune engine: SFX + three public-domain tunes in
+// original arrangements, with a player of its own (single tunes or ALL in turn, faster with the level).
+import { arp, audioNow, midiHz, noise, tone } from 'arcade-kit/audio';
 
-export function unlockAudio() {
-  // iOS: play through the silent switch like a media app (Safari 16.4+).
-  const session = (navigator as { audioSession?: { type: string } }).audioSession;
-  if (session && session.type !== 'playback') session.type = 'playback';
-  if (!ctx) {
-    ctx = new AudioContext();
-    master = ctx.createGain();
-    master.gain.value = 0.22;
-    master.connect(ctx.destination);
-    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const d = noiseBuf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  }
-  if (ctx.state === 'suspended') void ctx.resume();
-}
-
-const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
-
-function tone(freq: number, dur: number, type: OscillatorType, vol: number, at = 0, slideTo?: number) {
-  if (!ctx) return;
-  const t = at || ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, t);
-  if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
-  g.gain.setValueAtTime(vol, t);
-  g.gain.setValueAtTime(vol, t + dur * 0.7);
-  g.gain.linearRampToValueAtTime(0, t + dur);
-  osc.connect(g).connect(master);
-  osc.start(t);
-  osc.stop(t + dur + 0.01);
-}
-
-function noise(dur: number, vol: number, cutoff: number) {
-  if (!ctx) return;
-  const t = ctx.currentTime;
-  const src = ctx.createBufferSource();
-  src.buffer = noiseBuf;
-  const f = ctx.createBiquadFilter();
-  f.type = 'lowpass';
-  f.frequency.value = cutoff;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  src.connect(f).connect(g).connect(master);
-  src.start(t);
-  src.stop(t + dur);
-}
-
-function arp(notes: number[], step: number, vol = 0.25) {
-  if (!ctx) return;
-  const t = ctx.currentTime;
-  notes.forEach((n, i) => n && tone(midiHz(n), step, 'square', vol, t + i * step));
-}
+export { unlockAudio } from 'arcade-kit/audio';
 
 export const sfx = {
   move: () => tone(1400, 0.02, 'square', 0.12),
@@ -185,8 +130,9 @@ let speed = 1;
 let timer: number | undefined;
 
 function schedule() {
-  if (!ctx || current < 0) return;
-  while (nextTime < ctx.currentTime + 0.12) {
+  const now = audioNow();
+  if (now === null || current < 0) return;
+  while (nextTime < now + 0.12) {
     if (playlist && tick >= compiled[current].loop * ALL_REPEATS) {
       current = (current + 1) % TRACKS.length;
       tick = 0;
@@ -215,8 +161,9 @@ export const music = {
       tick = 0;
     }
     playing = true;
-    if (!ctx || !musicOn || timer !== undefined) return;
-    nextTime = ctx.currentTime + 0.05;
+    const now = audioNow();
+    if (now === null || !musicOn || timer !== undefined) return;
+    nextTime = now + 0.05;
     timer = window.setInterval(schedule, 25);
   },
   resume() {

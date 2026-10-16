@@ -2,7 +2,7 @@ import { Player, PInput, ClearEvent } from './player';
 import { MODES, Mode, B_HEIGHTS, ROLL_FRAMES } from './modes';
 import { loadTables, saveTables, rankFor, ScoreEntry, Tables, MAX_SCORES, load, save, fetchGlobal, submitGlobal, flushPending } from './scores';
 import { sfx, music, ACCELERATES, TRACK_NAMES, MUSIC_ALL, MUSIC_OFF } from './audio';
-import { hashString, randomSeed, today } from './rng';
+import { hashString, randomSeed, today } from 'arcade-kit/rng';
 import { blockColor, MODERN_COLORS } from './draw';
 import { HELP_PAGES } from './help';
 
@@ -566,7 +566,7 @@ export class Game {
       rules: p.cfg.modern ? 'M' : 'C',
     };
     const list = this.tables[mode.id];
-    const at = rankFor(list, mode.rank, entry);
+    const at = rankFor(list, entry, mode.id);
     this.scoresView = this.settings.mode;
     const last = (load('jtris.name') ?? '').slice(0, NAME_LEN);
     if (at < 0) {

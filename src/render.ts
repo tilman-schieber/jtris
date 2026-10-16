@@ -4,10 +4,8 @@ import { MODES, B_HEIGHTS } from './modes';
 import { MAX_SCORES } from './scores';
 import { HELP_PAGES, wrapText } from './help';
 import { drawText, drawTextCentered, textWidth } from './font';
-import {
-  Ctx, W, H, WHITE, RED, GREY, LIGHT, DARK, YELLOW, MODERN_COLORS,
-  palette, mix, blockColor, drawBlock, drawGhost, background, drawBox, pad,
-} from './draw';
+import { Ctx, WHITE, RED, GREY, LIGHT, DARK, mix, drawBox, pad } from 'arcade-kit/draw';
+import { W, H, YELLOW, MODERN_COLORS, palette, blockColor, drawBlock, drawGhost, background } from './draw';
 import rocketUrl from './assets/rocket.png';
 
 export { W, H };

@@ -1,28 +1,16 @@
-// Low-level pixel drawing: blocks, panels, backgrounds.
+// JTRIS' own pixel drawing: blocks, ghosts, the brick background. Panels and colors are arcade-kit's.
+import { Ctx, WHITE, GREY, mix } from 'arcade-kit/draw';
 import { STYLE, PALETTES, MODERN_COLORS } from './pieces';
 
 export { MODERN_COLORS };
 export const W = 256;
 export const H = 224;
-export const WHITE = '#fcfcfc';
-export const RED = '#f83800';
-export const GREY = '#7c7c7c';
-export const LIGHT = '#bcbcbc';
-export const DARK = '#383838';
+/** Not the kit's yellow: the modern O piece's. */
 export const YELLOW = MODERN_COLORS[3];
 /** Board value 8 (piece type 7) is versus garbage. */
 export const GARBAGE = 7;
 
-export type Ctx = CanvasRenderingContext2D;
-
 export const palette = (level: number) => PALETTES[level % PALETTES.length];
-
-export function mix(a: string, b: string, t: number) {
-  const pa = parseInt(a.slice(1), 16);
-  const pb = parseInt(b.slice(1), 16);
-  const ch = (s: number) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
-  return `#${[ch(16), ch(8), ch(0)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
 
 /** Main color of a block, for particles and ghosts. */
 export function blockColor(type: number, level: number, modern: boolean) {
@@ -108,21 +96,3 @@ export function background(level: number) {
   bgCache.set(key, c);
   return c;
 }
-
-// Framed black panel with rounded corners; (x, y, w, h) is the outer edge.
-export function drawBox(ctx: Ctx, x: number, y: number, w: number, h: number) {
-  const ring = (i: number, color: string) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(x + i, y + i, w - 2 * i, h - 2 * i);
-  };
-  ring(0, '#000');
-  ring(1, LIGHT);
-  ring(2, WHITE);
-  ring(3, '#585858');
-  ring(4, '#000');
-  ctx.fillStyle = '#000';
-  for (const [cx, cy] of [[x + 1, y + 1], [x + w - 2, y + 1], [x + 1, y + h - 2], [x + w - 2, y + h - 2]])
-    ctx.fillRect(cx, cy, 1, 1);
-}
-
-export const pad = (n: number, len: number) => String(n).padStart(len, '0');

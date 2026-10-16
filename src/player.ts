@@ -1,5 +1,5 @@
 import { NES_PIECES, SRS_PIECES, NES_SPAWN, SRS_SPAWN, srsKicks, Cell, T, I } from './pieces';
-import { makeRng, Rng } from './rng';
+import { makeRng, Rng } from 'arcade-kit/rng';
 import { sfx } from './audio';
 
 export const COLS = 10;
